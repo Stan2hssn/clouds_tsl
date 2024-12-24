@@ -27,7 +27,7 @@ export default class Playground {
   // Configure the camera
   setupCamera() {
     this.camera = new THREE.PerspectiveCamera(25, this.viewport.width / this.viewport.height, 0.1, 100)
-    this.camera.position.set(6, 3, 10)
+    this.camera.position.set(0, 0, 3)
   }
 
   // Create and configure the scene
@@ -52,18 +52,8 @@ export default class Playground {
   // Create and configure the mesh
   setupMesh() {
     this.material = new THREE.MeshBasicNodeMaterial()
-    this.timeFrequency = uniform(0.5)
-    this.positionFrequency = uniform(2)
-    this.intensityFrequency = uniform(0.5)
-
-    this.oscillation = sin(time.mul(this.timeFrequency).add(positionLocal.y.mul(this.positionFrequency))).mul(
-      this.intensityFrequency
-    )
-    this.material.positionNode = vec3(positionLocal.x.add(this.oscillation), positionLocal.y, positionLocal.z)
-
-    this.material.colorNode = vec4(uv().mul(vec2(32, 8)).fract(), 1, 1)
-
-    this.mesh = new THREE.Mesh(new THREE.TorusKnotGeometry(1, 0.35, 128, 32), this.material)
+    this.material.colorNode = vec4(uv(), 1, 1)
+    this.mesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1, 32), this.material)
     this.scene.add(this.mesh)
   }
 
