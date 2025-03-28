@@ -1,9 +1,15 @@
 import { Pane } from "tweakpane"
 import * as THREE from "three/webgpu"
-import { sin, positionLocal, time, vec2, vec3, vec4, uv, uniform, color, rangeFog } from "three/tsl"
-import { OrbitControls } from "three/addons/controls/OrbitControls.js"
 
-export default class Playground {
+import { sin, positionLocal, time, vec2, vec3, vec4, uv, uniform, color, rangeFog } from "three/tsl"
+import getFullscreenTriangle from "./pure/Geometries/getFullScreenTriangle"
+import SDFMaterial from "./pure/Materials/getSDFMaterial"
+
+import { OrbitControls } from "three/addons/controls/OrbitControls.js"
+import SDF from "./components/SDF"
+import gsap from "gsap"
+
+class App {
   constructor(canvas) {
     // Initialize viewport dimensions
     this.viewport = {
@@ -11,7 +17,14 @@ export default class Playground {
       height: window.innerHeight,
     }
 
-    this.init(canvas)
+    this.coords = new THREE.Vector2(0)
+    this.prevCoords = new THREE.Vector2(0)
+    this.timer = 0
+    this.mouseMoved = false
+
+    this.Components = {}
+
+    this.setupInput()
   }
 
   // Setup all initial configurations
@@ -20,14 +33,15 @@ export default class Playground {
     this.setupScene()
     this.setupRenderer(canvas)
     this.setupDebugPanel()
-    this.setupMesh()
+
+    this.Components.SDF = new SDF()
+
     this.setupControls()
   }
 
   // Configure the camera
   setupCamera() {
-    this.camera = new THREE.PerspectiveCamera(25, this.viewport.width / this.viewport.height, 0.1, 100)
-    this.camera.position.set(0, 0, 3)
+    this.camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1)
   }
 
   // Create and configure the scene
@@ -36,6 +50,35 @@ export default class Playground {
     this.fogColor = uniform(color("#1b191f"))
     this.fogNode = rangeFog(this.fogColor, 20, 50)
     this.scene.fogNode = this.fogNode
+  }
+
+  setupInput() {
+    this.xTo = gsap.quickTo(this.coords, "x", {
+      duration: 0.6,
+      ease: "power2.out",
+    })
+    this.yTo = gsap.quickTo(this.coords, "y", {
+      duration: 0.6,
+      ease: "power2.out",
+    })
+
+    document.addEventListener("mousemove", this.onDocumentTouchMove.bind(this), false)
+  }
+
+  onDocumentTouchMove(event) {
+    this.setCoords(event.clientX, event.clientY)
+  }
+
+  setCoords(x, y) {
+    if (this.timer) clearTimeout(this.timer)
+
+    this.xTo((x / this.viewport.width) * 2 - 1)
+    this.yTo(-(y / this.viewport.height) * 2 + 1)
+
+    this.mouseMoved = true
+    this.timer = setTimeout(() => {
+      this.mouseMoved = false
+    }, 100)
   }
 
   // Configure the renderer
@@ -50,12 +93,7 @@ export default class Playground {
   }
 
   // Create and configure the mesh
-  setupMesh() {
-    this.material = new THREE.MeshBasicNodeMaterial()
-    this.material.colorNode = vec4(uv(), 1, 1)
-    this.mesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1, 32), this.material)
-    this.scene.add(this.mesh)
-  }
+  setupMesh() {}
 
   // Setup the debug panel
   setupDebugPanel() {
@@ -69,10 +107,16 @@ export default class Playground {
   }
 
   // Render the scene
-  render(time) {
+  render(t) {
+    this.prevCoords.copy(this.coords)
+
+    Object.values(this.Components).forEach((component) => {
+      component.render(t)
+    })
+
     this.controls.update()
     this.renderer.renderAsync(this.scene, this.camera)
-    this.renderer.setAnimationLoop(() => this.render(time))
+    this.renderer.setAnimationLoop((t) => this.render(t))
   }
 
   // Handle viewport resize
@@ -82,8 +126,18 @@ export default class Playground {
       height: window.innerHeight,
     }
 
+    Object.values(this.Components).forEach((component) => {
+      component.resize()
+    })
+
+    this.camera.left = -1
+    this.camera.right = 1
+    this.camera.top = 1
+    this.camera.bottom = -1
+
     this.camera.aspect = this.viewport.width / this.viewport.height
     this.camera.updateProjectionMatrix()
+
     this.renderer.setSize(this.viewport.width, this.viewport.height)
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
   }
@@ -91,3 +145,5 @@ export default class Playground {
   // Dispose resources
   dispose() {}
 }
+
+export default new App()

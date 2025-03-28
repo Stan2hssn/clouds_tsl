@@ -1,6 +1,4 @@
-import App from "./index.js"
-
-let app = null
+import App from "./App.js"
 
 function onMounted() {
   // Canvas
@@ -11,11 +9,11 @@ function onMounted() {
     return
   }
 
-  app = new App(canvas)
-  app.render()
+  App.init(canvas)
+  App.render()
 
   window.addEventListener("resize", () => {
-    app.resize()
+    App.resize()
   })
 }
 
